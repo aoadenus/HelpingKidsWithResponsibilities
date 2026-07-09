@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Chore List</title>
+<style>
+  :root {
+    --panel-bg: rgba(255,255,255,0.85);
+    --text-dark: #333;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #dbe9f4, #f4f4f9);
+    transition: background 0.6s ease;
+    color: var(--text-dark);
+  }
+
+  header {
+    text-align: center;
+    padding: 24px 16px 12px;
+  }
+  header h1 {
+    margin: 0 0 6px;
+    font-size: 2rem;
+    letter-spacing: 0.5px;
+  }
+  #clock {
+    font-size: 1.1rem;
+    opacity: 0.85;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .tab-btn {
+    border: none;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(255,255,255,0.6);
+    color: #444;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .tab-btn:hover { transform: translateY(-2px); }
+  .tab-btn.active {
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 16px 60px;
+  }
+
+  .panel {
+    display: none;
+    border-radius: 24px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    min-height: 400px;
+    background-size: cover;
+  }
+  .panel.active { display: block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity:1; transform: translateY(0);} }
+
+  .panel h2 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin-top: 0;
+    text-shadow: 0 1px 3px rgba(255,255,255,0.6);
+  }
+
+  .card {
+    background: var(--panel-bg);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    backdrop-filter: blur(2px);
+  }
+
+  .add-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .add-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+  }
+  .add-row button, .reminder-add button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #6c63ff;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .add-row button:hover, .reminder-add button:hover { filter: brightness(1.1); }
+
+  ul.chore-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  ul.chore-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    font-size: 1.05rem;
+  }
+  ul.chore-list li:last-child { border-bottom: none; }
+  ul.chore-list li.done span.label {
+    text-decoration: line-through;
+    opacity: 0.55;
+  }
+  ul.chore-list li input[type="checkbox"] {
+    width: 20px; height: 20px;
+    cursor: pointer;
+    accent-color: #6c63ff;
+  }
+  ul.chore-list li span.label { flex: 1; }
+  .remove-btn {
+    border: none;
+    background: transparent;
+    color: #c0392b;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+  .remove-btn:hover { background: rgba(192,57,43,0.12); }
+
+  .empty-msg {
+    text-align: center;
+    opacity: 0.6;
+    padding: 20px 0;
+    font-style: italic;
+  }
+
+  .reminders-section h3 {
+    margin-top: 0;
+  }
+  .reminder-add {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .reminder-add input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+  }
+  ul.reminder-list { list-style: none; margin: 0; padding: 0; }
+  ul.reminder-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px;
+    font-size: 0.95rem;
+    border-bottom: 1px dashed rgba(0,0,0,0.1);
+  }
+  ul.reminder-list li:last-child { border-bottom: none; }
+  ul.reminder-list li span { flex: 1; }
+
+  /* ---------- THEMES ---------- */
+
+  /* Greg - blue clouds */
+  #panel-greg {
+    background: linear-gradient(180deg, #bcdfff 0%, #eaf6ff 60%, #ffffff 100%);
+  }
+  #panel-greg::before, #panel-greg::after {
+    content: "";
+    position: absolute;
+    background: radial-gradient(circle, #fff 40%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  #panel-greg::before { width: 220px; height: 100px; top: 20px; left: -40px; animation: float1 18s ease-in-out infinite; }
+  #panel-greg::after { width: 160px; height: 80px; top: 90px; right: -30px; animation: float2 22s ease-in-out infinite; }
+  #panel-greg .tab-btn-ref {} /* placeholder */
+  .tab-greg.active { background: #4a90e2; }
+
+  /* Chloe - pink clouds + butterflies */
+  #panel-chloe {
+    background: linear-gradient(180deg, #ffd9ec 0%, #fff0f7 60%, #ffffff 100%);
+  }
+  #panel-chloe::before, #panel-chloe::after {
+    content: "";
+    position: absolute;
+    background: radial-gradient(circle, #fff 40%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0.9;
+  }
+  #panel-chloe::before { width: 200px; height: 90px; top: 30px; right: -30px; animation: float1 20s ease-in-out infinite; }
+  #panel-chloe::after { width: 150px; height: 70px; bottom: 40px; left: -20px; animation: float2 24s ease-in-out infinite; }
+  .tab-chloe.active { background: #ff6fb0; }
+  .butterfly {
+    position: absolute;
+    font-size: 1.6rem;
+    animation: flutter 6s ease-in-out infinite;
+    opacity: 0.85;
+  }
+
+  /* Emani - purple glitter clouds */
+  #panel-emani {
+    background: linear-gradient(180deg, #e4d4ff 0%, #f6efff 60%, #ffffff 100%);
+  }
+  #panel-emani::before, #panel-emani::after {
+    content: "";
+    position: absolute;
+    background: radial-gradient(circle, #fff 40%, transparent 70%);
+    border-radius: 50%;
+    opacity: 0.9;
+  }
+  #panel-emani::before { width: 210px; height: 95px; top: 15px; left: -30px; animation: float2 19s ease-in-out infinite; }
+  #panel-emani::after { width: 140px; height: 65px; bottom: 30px; right: -20px; animation: float1 23s ease-in-out infinite; }
+  .tab-emani.active { background: #9b59d0; }
+  .glitter {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px 2px #fff, 0 0 10px 4px #d9b8ff;
+    animation: twinkle 2.5s ease-in-out infinite;
+  }
+
+  /* Glam - ladybugs */
+  #panel-glam {
+    background: linear-gradient(180deg, #fff4d9 0%, #fffaf0 60%, #ffffff 100%);
+  }
+  .tab-glam.active { background: #e74c3c; }
+  .ladybug {
+    position: absolute;
+    font-size: 1.5rem;
+    animation: crawl 10s linear infinite;
+    opacity: 0.9;
+  }
+
+  /* Tutu - purple/black galaxy */
+  #panel-tutu {
+    background: radial-gradient(ellipse at top, #2d1b4e 0%, #0d0a1f 70%);
+    color: #f1e9ff;
+  }
+  #panel-tutu h2 { text-shadow: 0 1px 6px rgba(155,89,208,0.8); color: #e6d6ff; }
+  #panel-tutu .card {
+    background: rgba(30,20,55,0.65);
+    color: #f1e9ff;
+  }
+  #panel-tutu .empty-msg { color: #cbb8ef; }
+  #panel-tutu ul.chore-list li { border-bottom-color: rgba(255,255,255,0.12); }
+  .tab-tutu.active { background: #4b2e83; }
+  .star {
+    position: absolute;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
+  @keyframes float1 {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(20px) translateY(10px); }
+  }
+  @keyframes float2 {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(-25px) translateY(-8px); }
+  }
+  @keyframes flutter {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(8deg); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+  @keyframes crawl {
+    0% { transform: translateX(-10%) translateY(0); }
+    50% { transform: translateX(60%) translateY(-8px); }
+    100% { transform: translateX(120%) translateY(0); }
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    opacity: 0.6;
+    font-size: 0.85rem;
+  }
+
+  #confetti-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<header>
+  <h1>Our Chore List</h1>
+  <div id="clock"></div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn tab-greg" data-tab="greg">Greg</button>
+  <button class="tab-btn tab-chloe" data-tab="chloe">Chloe</button>
+  <button class="tab-btn tab-emani" data-tab="emani">Emani</button>
+  <button class="tab-btn tab-glam" data-tab="glam">Glam</button>
+  <button class="tab-btn tab-tutu" data-tab="tutu">Tutu</button>
+</nav>
+
+<main>
+
+  <section class="panel" id="panel-greg" data-kid="greg">
+    <h2>Gregory's Chore List</h2>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="input-greg" placeholder="Add a new chore...">
+        <button onclick="addChore('greg')">Add</button>
+      </div>
+      <ul class="chore-list" id="list-greg"></ul>
+    </div>
+    <div class="card reminders-section">
+      <h3>Reminders</h3>
+      <div class="reminder-add">
+        <input type="text" id="reminder-input-greg" placeholder="Add a reminder...">
+        <button onclick="addReminder('greg')">Add</button>
+      </div>
+      <ul class="reminder-list" id="reminder-list-greg"></ul>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-chloe" data-kid="chloe">
+    <h2>Chloe's Chore List</h2>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="input-chloe" placeholder="Add a new chore...">
+        <button onclick="addChore('chloe')">Add</button>
+      </div>
+      <ul class="chore-list" id="list-chloe"></ul>
+    </div>
+    <div class="card reminders-section">
+      <h3>Reminders</h3>
+      <div class="reminder-add">
+        <input type="text" id="reminder-input-chloe" placeholder="Add a reminder...">
+        <button onclick="addReminder('chloe')">Add</button>
+      </div>
+      <ul class="reminder-list" id="reminder-list-chloe"></ul>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-emani" data-kid="emani">
+    <h2>Emani's Chore List</h2>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="input-emani" placeholder="Add a new chore...">
+        <button onclick="addChore('emani')">Add</button>
+      </div>
+      <ul class="chore-list" id="list-emani"></ul>
+    </div>
+    <div class="card reminders-section">
+      <h3>Reminders</h3>
+      <div class="reminder-add">
+        <input type="text" id="reminder-input-emani" placeholder="Add a reminder...">
+        <button onclick="addReminder('emani')">Add</button>
+      </div>
+      <ul class="reminder-list" id="reminder-list-emani"></ul>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-glam" data-kid="glam">
+    <h2>Glam's Chore List</h2>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="input-glam" placeholder="Add a new chore...">
+        <button onclick="addChore('glam')">Add</button>
+      </div>
+      <ul class="chore-list" id="list-glam"></ul>
+    </div>
+    <div class="card reminders-section">
+      <h3>Reminders</h3>
+      <div class="reminder-add">
+        <input type="text" id="reminder-input-glam" placeholder="Add a reminder...">
+        <button onclick="addReminder('glam')">Add</button>
+      </div>
+      <ul class="reminder-list" id="reminder-list-glam"></ul>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-tutu" data-kid="tutu">
+    <h2>Tutu's Chore List</h2>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="input-tutu" placeholder="Add a new chore...">
+        <button onclick="addChore('tutu')">Add</button>
+      </div>
+      <ul class="chore-list" id="list-tutu"></ul>
+    </div>
+    <div class="card reminders-section">
+      <h3>Reminders</h3>
+      <div class="reminder-add">
+        <input type="text" id="reminder-input-tutu" placeholder="Add a reminder...">
+        <button onclick="addReminder('tutu')">Add</button>
+      </div>
+      <ul class="reminder-list" id="reminder-list-tutu"></ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>Made with love for our family &hearts;</footer>
+
+<script>
+  const KIDS = ['greg', 'chloe', 'emani', 'glam', 'tutu'];
+
+  /* ---------- Tabs ---------- */
+  function showTab(kid) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + kid).classList.add('active');
+    document.querySelector('.tab-' + kid).classList.add('active');
+    localStorage.setItem('activeTab', kid);
+  }
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => showTab(btn.dataset.tab));
+  });
+
+  /* ---------- Clock ---------- */
+  function updateClock() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('clock').textContent = dateStr + ' — ' + timeStr;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ---------- Data (localStorage) ---------- */
+  function loadData(kid) {
+    const raw = localStorage.getItem('chores-' + kid);
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveData(kid, chores) {
+    localStorage.setItem('chores-' + kid, JSON.stringify(chores));
+  }
+  function loadReminders(kid) {
+    const raw = localStorage.getItem('reminders-' + kid);
+    return raw ? JSON.parse(raw) : [];
+  }
+  function saveReminders(kid, reminders) {
+    localStorage.setItem('reminders-' + kid, JSON.stringify(reminders));
+  }
+
+  function renderChores(kid) {
+    const chores = loadData(kid);
+    const list = document.getElementById('list-' + kid);
+    list.innerHTML = '';
+    if (chores.length === 0) {
+      const empty = document.createElement('li');
+      empty.className = 'empty-msg';
+      empty.textContent = 'No chores yet — add one above!';
+      empty.style.listStyle = 'none';
+      list.appendChild(empty);
+      return;
+    }
+    chores.forEach((chore, idx) => {
+      const li = document.createElement('li');
+      if (chore.done) li.classList.add('done');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = chore.done;
+      checkbox.addEventListener('change', () => toggleChore(kid, idx));
+
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = chore.text;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.title = 'Remove chore';
+      removeBtn.addEventListener('click', () => removeChore(kid, idx));
+
+      li.appendChild(checkbox);
+      li.appendChild(label);
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
+  }
+
+  function renderReminders(kid) {
+    const reminders = loadReminders(kid);
+    const list = document.getElementById('reminder-list-' + kid);
+    list.innerHTML = '';
+    if (reminders.length === 0) {
+      const empty = document.createElement('li');
+      empty.textContent = 'No reminders yet.';
+      empty.style.opacity = '0.6';
+      empty.style.fontStyle = 'italic';
+      list.appendChild(empty);
+      return;
+    }
+    reminders.forEach((text, idx) => {
+      const li = document.createElement('li');
+      const span = document.createElement('span');
+      span.textContent = text;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.title = 'Remove reminder';
+      removeBtn.addEventListener('click', () => {
+        const rs = loadReminders(kid);
+        rs.splice(idx, 1);
+        saveReminders(kid, rs);
+        renderReminders(kid);
+      });
+      li.appendChild(span);
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
+  }
+
+  function addChore(kid) {
+    const input = document.getElementById('input-' + kid);
+    const text = input.value.trim();
+    if (!text) return;
+    const chores = loadData(kid);
+    chores.push({ text: text, done: false });
+    saveData(kid, chores);
+    input.value = '';
+    renderChores(kid);
+  }
+
+  function toggleChore(kid, idx) {
+    const chores = loadData(kid);
+    chores[idx].done = !chores[idx].done;
+    saveData(kid, chores);
+    renderChores(kid);
+    if (chores[idx].done) {
+      launchConfetti();
+      playChime();
+    }
+  }
+
+  function removeChore(kid, idx) {
+    const chores = loadData(kid);
+    chores.splice(idx, 1);
+    saveData(kid, chores);
+    renderChores(kid);
+  }
+
+  function addReminder(kid) {
+    const input = document.getElementById('reminder-input-' + kid);
+    const text = input.value.trim();
+    if (!text) return;
+    const reminders = loadReminders(kid);
+    reminders.push(text);
+    saveReminders(kid, reminders);
+    input.value = '';
+    renderReminders(kid);
+  }
+
+  // Enter key support
+  KIDS.forEach(kid => {
+    document.getElementById('input-' + kid).addEventListener('keydown', e => {
+      if (e.key === 'Enter') addChore(kid);
+    });
+    document.getElementById('reminder-input-' + kid).addEventListener('keydown', e => {
+      if (e.key === 'Enter') addReminder(kid);
+    });
+  });
+
+  /* ---------- Decorative extras ---------- */
+  function addDecor() {
+    // Butterflies for Chloe
+    const chloePanel = document.getElementById('panel-chloe');
+    const butterflyEmojis = ['🦋'];
+    for (let i = 0; i < 5; i++) {
+      const b = document.createElement('div');
+      b.className = 'butterfly';
+      b.textContent = butterflyEmojis[0];
+      b.style.left = (10 + Math.random() * 80) + '%';
+      b.style.top = (5 + Math.random() * 85) + '%';
+      b.style.animationDelay = (Math.random() * 5) + 's';
+      b.style.fontSize = (1.2 + Math.random() * 1.2) + 'rem';
+      chloePanel.appendChild(b);
+    }
+
+    // Glitter for Emani
+    const emaniPanel = document.getElementById('panel-emani');
+    for (let i = 0; i < 25; i++) {
+      const g = document.createElement('div');
+      g.className = 'glitter';
+      const size = 3 + Math.random() * 4;
+      g.style.width = size + 'px';
+      g.style.height = size + 'px';
+      g.style.left = Math.random() * 100 + '%';
+      g.style.top = Math.random() * 100 + '%';
+      g.style.animationDelay = (Math.random() * 2.5) + 's';
+      emaniPanel.appendChild(g);
+    }
+
+    // Ladybugs for Glam
+    const glamPanel = document.getElementById('panel-glam');
+    for (let i = 0; i < 4; i++) {
+      const lb = document.createElement('div');
+      lb.className = 'ladybug';
+      lb.textContent = '🐞';
+      lb.style.top = (10 + Math.random() * 75) + '%';
+      lb.style.animationDelay = (Math.random() * 8) + 's';
+      lb.style.animationDuration = (8 + Math.random() * 6) + 's';
+      glamPanel.appendChild(lb);
+    }
+
+    // Stars for Tutu's galaxy
+    const tutuPanel = document.getElementById('panel-tutu');
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = 1 + Math.random() * 2.5;
+      s.style.width = size + 'px';
+      s.style.height = size + 'px';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = Math.random() * 100 + '%';
+      s.style.animationDelay = (Math.random() * 3) + 's';
+      tutuPanel.appendChild(s);
+    }
+  }
+  addDecor();
+
+  /* ---------- Confetti ---------- */
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  let confettiPieces = [];
+  const confettiColors = ['#ff6fb0', '#6c63ff', '#4a90e2', '#e74c3c', '#f1c40f', '#2ecc71', '#9b59d0'];
+
+  function launchConfetti() {
+    for (let i = 0; i < 120; i++) {
+      confettiPieces.push({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * canvas.height * 0.3,
+        w: 6 + Math.random() * 6,
+        h: 6 + Math.random() * 10,
+        color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+        speedY: 2 + Math.random() * 3,
+        speedX: -2 + Math.random() * 4,
+        rotation: Math.random() * 360,
+        rotationSpeed: -10 + Math.random() * 20,
+        life: 0,
+        maxLife: 150 + Math.random() * 60
+      });
+    }
+  }
+
+  function animateConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    confettiPieces.forEach(p => {
+      p.x += p.speedX;
+      p.y += p.speedY;
+      p.rotation += p.rotationSpeed;
+      p.life++;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - p.life / p.maxLife);
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    confettiPieces = confettiPieces.filter(p => p.life < p.maxLife && p.y < canvas.height + 30);
+    requestAnimationFrame(animateConfetti);
+  }
+  animateConfetti();
+
+  /* ---------- Sound ---------- */
+  let audioCtx;
+  function playChime() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const now = audioCtx.currentTime;
+      const notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const start = now + i * 0.09;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.4);
+      });
+    } catch (e) { /* audio unsupported */ }
+  }
+
+  /* ---------- Init ---------- */
+  KIDS.forEach(kid => {
+    renderChores(kid);
+    renderReminders(kid);
+  });
+  const savedTab = localStorage.getItem('activeTab') || 'greg';
+  showTab(savedTab);
+</script>
+
+</body>
+</html>
