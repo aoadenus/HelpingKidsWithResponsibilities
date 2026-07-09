@@ -164,27 +164,50 @@
   }
   .reminder-add {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 12px;
   }
-  .reminder-add input {
+  .reminder-add input[type="text"] {
     flex: 1;
+    min-width: 140px;
     padding: 10px 12px;
     border-radius: 10px;
     border: 1px solid #ccc;
     font-size: 0.95rem;
+  }
+  .reminder-add input[type="datetime-local"] {
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 0.85rem;
   }
   ul.reminder-list { list-style: none; margin: 0; padding: 0; }
   ul.reminder-list li {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 6px;
+    padding: 9px 8px;
     font-size: 0.95rem;
     border-bottom: 1px dashed rgba(0,0,0,0.1);
+    border-radius: 8px;
   }
   ul.reminder-list li:last-child { border-bottom: none; }
-  ul.reminder-list li span { flex: 1; }
+  ul.reminder-list li .r-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  ul.reminder-list li .r-due { font-size: 0.78rem; opacity: 0.75; }
+  ul.reminder-list li.r-done .r-label { text-decoration: line-through; opacity: 0.55; }
+  ul.reminder-list li input[type="checkbox"] {
+    width: 18px; height: 18px;
+    cursor: pointer;
+    accent-color: #6c63ff;
+    flex-shrink: 0;
+  }
+  ul.reminder-list li.r-overdue { background: rgba(231,76,60,0.14); }
+  ul.reminder-list li.r-overdue .r-due { color: #c0392b; font-weight: 600; }
+  ul.reminder-list li.r-today { background: rgba(241,196,15,0.16); }
+  ul.reminder-list li.r-today .r-due { color: #9a7d0a; font-weight: 600; }
+  #panel-tutu ul.reminder-list li.r-overdue { background: rgba(231,76,60,0.28); }
+  #panel-tutu ul.reminder-list li.r-today { background: rgba(241,196,15,0.22); }
 
   /* ---------- THEMES ---------- */
 
@@ -317,11 +340,47 @@
     pointer-events: none;
     z-index: 999;
   }
+
+  /* Reminder popup */
+  #reminder-popup-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 320px;
+  }
+  .reminder-popup {
+    background: #fff;
+    border-left: 6px solid #6c63ff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    animation: popIn 0.3s ease;
+  }
+  .reminder-popup strong { display: block; margin-bottom: 4px; }
+  .reminder-popup button {
+    margin-top: 8px;
+    border: none;
+    background: #6c63ff;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
 </style>
 </head>
 <body>
 
 <canvas id="confetti-canvas"></canvas>
+<div id="reminder-popup-container"></div>
 
 <header>
   <h1>Our Chore List</h1>
@@ -351,6 +410,7 @@
       <h3>Reminders</h3>
       <div class="reminder-add">
         <input type="text" id="reminder-input-greg" placeholder="Add a reminder...">
+        <input type="datetime-local" id="reminder-due-greg">
         <button onclick="addReminder('greg')">Add</button>
       </div>
       <ul class="reminder-list" id="reminder-list-greg"></ul>
@@ -370,6 +430,7 @@
       <h3>Reminders</h3>
       <div class="reminder-add">
         <input type="text" id="reminder-input-chloe" placeholder="Add a reminder...">
+        <input type="datetime-local" id="reminder-due-chloe">
         <button onclick="addReminder('chloe')">Add</button>
       </div>
       <ul class="reminder-list" id="reminder-list-chloe"></ul>
@@ -389,6 +450,7 @@
       <h3>Reminders</h3>
       <div class="reminder-add">
         <input type="text" id="reminder-input-emani" placeholder="Add a reminder...">
+        <input type="datetime-local" id="reminder-due-emani">
         <button onclick="addReminder('emani')">Add</button>
       </div>
       <ul class="reminder-list" id="reminder-list-emani"></ul>
@@ -408,6 +470,7 @@
       <h3>Reminders</h3>
       <div class="reminder-add">
         <input type="text" id="reminder-input-glam" placeholder="Add a reminder...">
+        <input type="datetime-local" id="reminder-due-glam">
         <button onclick="addReminder('glam')">Add</button>
       </div>
       <ul class="reminder-list" id="reminder-list-glam"></ul>
@@ -427,6 +490,7 @@
       <h3>Reminders</h3>
       <div class="reminder-add">
         <input type="text" id="reminder-input-tutu" placeholder="Add a reminder...">
+        <input type="datetime-local" id="reminder-due-tutu">
         <button onclick="addReminder('tutu')">Add</button>
       </div>
       <ul class="reminder-list" id="reminder-list-tutu"></ul>
@@ -461,6 +525,8 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
+  setInterval(checkDueReminders, 15000);
+  checkDueReminders();
 
   /* ---------- Data (localStorage) ---------- */
   function loadData(kid) {
@@ -516,11 +582,30 @@
     });
   }
 
+  function formatDue(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const dateStr = sameDay ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const timeStr = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return dateStr + ' at ' + timeStr;
+  }
+
   function renderReminders(kid) {
+    // sort by soonest due date first; reminders with no due date go last
     const reminders = loadReminders(kid);
+    const sorted = reminders
+      .map((r, originalIdx) => ({ ...r, originalIdx }))
+      .sort((a, b) => {
+        if (!a.due && !b.due) return 0;
+        if (!a.due) return 1;
+        if (!b.due) return -1;
+        return new Date(a.due) - new Date(b.due);
+      });
+
     const list = document.getElementById('reminder-list-' + kid);
     list.innerHTML = '';
-    if (reminders.length === 0) {
+    if (sorted.length === 0) {
       const empty = document.createElement('li');
       empty.textContent = 'No reminders yet.';
       empty.style.opacity = '0.6';
@@ -528,10 +613,38 @@
       list.appendChild(empty);
       return;
     }
-    reminders.forEach((text, idx) => {
+
+    const now = new Date();
+    sorted.forEach(r => {
+      const idx = r.originalIdx;
       const li = document.createElement('li');
-      const span = document.createElement('span');
-      span.textContent = text;
+      if (r.done) li.classList.add('r-done');
+
+      let dueDate = r.due ? new Date(r.due) : null;
+      if (dueDate && !r.done) {
+        if (dueDate < now) li.classList.add('r-overdue');
+        else if (dueDate.toDateString() === now.toDateString()) li.classList.add('r-today');
+      }
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !!r.done;
+      checkbox.title = 'Mark reminder done';
+      checkbox.addEventListener('change', () => toggleReminder(kid, idx));
+
+      const textWrap = document.createElement('div');
+      textWrap.className = 'r-text';
+      const label = document.createElement('span');
+      label.className = 'r-label';
+      label.textContent = r.text;
+      textWrap.appendChild(label);
+      if (r.due) {
+        const due = document.createElement('span');
+        due.className = 'r-due';
+        due.textContent = formatDue(r.due);
+        textWrap.appendChild(due);
+      }
+
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
       removeBtn.innerHTML = '&times;';
@@ -542,10 +655,57 @@
         saveReminders(kid, rs);
         renderReminders(kid);
       });
-      li.appendChild(span);
+
+      li.appendChild(checkbox);
+      li.appendChild(textWrap);
       li.appendChild(removeBtn);
       list.appendChild(li);
     });
+  }
+
+  function toggleReminder(kid, idx) {
+    const reminders = loadReminders(kid);
+    reminders[idx].done = !reminders[idx].done;
+    if (reminders[idx].done) reminders[idx].alerted = true; // silence popup once handled
+    saveReminders(kid, reminders);
+    renderReminders(kid);
+  }
+
+  const KID_NAMES = { greg: 'Greg', chloe: 'Chloe', emani: 'Emani', glam: 'Glam', tutu: 'Tutu' };
+
+  function checkDueReminders() {
+    const now = new Date();
+    KIDS.forEach(kid => {
+      const reminders = loadReminders(kid);
+      let changed = false;
+      reminders.forEach((r, idx) => {
+        if (r.due && !r.done && !r.alerted && new Date(r.due) <= now) {
+          r.alerted = true;
+          changed = true;
+          showReminderPopup(kid, r.text, idx);
+        }
+      });
+      if (changed) saveReminders(kid, reminders);
+    });
+  }
+
+  function showReminderPopup(kid, text, idx) {
+    const container = document.getElementById('reminder-popup-container');
+    const popup = document.createElement('div');
+    popup.className = 'reminder-popup';
+    const name = document.createElement('strong');
+    name.textContent = KID_NAMES[kid] + "'s reminder";
+    const msg = document.createElement('div');
+    msg.textContent = text;
+    const dismissBtn = document.createElement('button');
+    dismissBtn.textContent = 'Got it';
+    dismissBtn.addEventListener('click', () => popup.remove());
+    popup.appendChild(name);
+    popup.appendChild(msg);
+    popup.appendChild(dismissBtn);
+    container.appendChild(popup);
+    playChime();
+    setTimeout(() => popup.remove(), 20000);
   }
 
   function addChore(kid) {
@@ -579,12 +739,19 @@
 
   function addReminder(kid) {
     const input = document.getElementById('reminder-input-' + kid);
+    const dueInput = document.getElementById('reminder-due-' + kid);
     const text = input.value.trim();
     if (!text) return;
     const reminders = loadReminders(kid);
-    reminders.push(text);
+    reminders.push({
+      text: text,
+      done: false,
+      due: dueInput.value ? new Date(dueInput.value).toISOString() : null,
+      alerted: false
+    });
     saveReminders(kid, reminders);
     input.value = '';
+    dueInput.value = '';
     renderReminders(kid);
   }
 
