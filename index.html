@@ -326,6 +326,99 @@
     100% { transform: translateX(120%) translateY(0); }
   }
 
+  /* Devin - Pittsburgh Steelers (black & gold) */
+  #panel-devin {
+    background: linear-gradient(160deg, #0d1117 0%, #1c2a3a 45%, #101820 100%);
+    color: #f0e6c8;
+  }
+  #panel-devin h2 {
+    color: #FFB612;
+    text-shadow: 0 2px 12px rgba(255,182,18,0.55), 0 0 30px rgba(255,182,18,0.2);
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+  }
+  #panel-devin .card {
+    background: rgba(10,14,20,0.75);
+    color: #f0e6c8;
+    border: 1px solid rgba(255,182,18,0.28);
+  }
+  #panel-devin .card h3 { color: #FFB612; }
+  #panel-devin ul.chore-list li { border-bottom-color: rgba(255,182,18,0.15); }
+  #panel-devin ul.reminder-list li { border-bottom-color: rgba(255,182,18,0.15); }
+  #panel-devin .empty-msg { color: #7a6a4a; }
+  #panel-devin .add-row input,
+  #panel-devin .reminder-add input[type="text"],
+  #panel-devin .reminder-add input[type="datetime-local"] {
+    background: rgba(255,255,255,0.07);
+    color: #f0e6c8;
+    border-color: rgba(255,182,18,0.35);
+  }
+  #panel-devin .add-row input::placeholder,
+  #panel-devin .reminder-add input::placeholder { color: #6a5a3a; }
+  #panel-devin .add-row button,
+  #panel-devin .reminder-add button { background: #FFB612; color: #101820; font-weight: 700; }
+  #panel-devin ul.reminder-list li.r-overdue { background: rgba(231,76,60,0.28); }
+  #panel-devin ul.reminder-list li.r-today { background: rgba(255,182,18,0.18); }
+  #panel-devin .progress-bar-fill { background: linear-gradient(90deg, #FFB612, #ffd060) !important; }
+  #panel-devin .clear-done-btn { border-color: rgba(255,182,18,0.35); color: #f0e6c8; }
+  #panel-devin .all-done-msg { color: #FFB612; }
+  .tab-devin.active { background: #101820 !important; color: #FFB612 !important; outline: 2px solid #FFB612; outline-offset: 1px; }
+  .football {
+    position: absolute;
+    font-size: 1.8rem;
+    animation: tumble 14s linear infinite;
+    opacity: 0.75;
+  }
+  @keyframes tumble {
+    0%   { transform: translateX(-5%) translateY(0) rotate(0deg); }
+    50%  { transform: translateX(55%) translateY(-18px) rotate(180deg); }
+    100% { transform: translateX(110%) translateY(0) rotate(360deg); }
+  }
+
+  /* Progress bars */
+  .progress-wrap { margin-bottom: 14px; }
+  .progress-bar-track {
+    background: rgba(0,0,0,0.12);
+    border-radius: 999px;
+    height: 9px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #6c63ff, #4a90e2);
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  .progress-label {
+    font-size: 0.78rem;
+    opacity: 0.65;
+    text-align: right;
+    margin-top: 4px;
+  }
+  .all-done-msg {
+    text-align: center;
+    padding: 14px 0 6px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #27ae60;
+    animation: fadeIn 0.4s ease;
+    list-style: none;
+  }
+  .clear-done-btn {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    border: 1px dashed rgba(0,0,0,0.25);
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 0.88rem;
+    transition: opacity 0.2s;
+  }
+  .clear-done-btn:hover { opacity: 1; }
+
   footer {
     text-align: center;
     padding: 20px;
@@ -393,6 +486,7 @@
   <button class="tab-btn tab-emani" data-tab="emani">Emani</button>
   <button class="tab-btn tab-glam" data-tab="glam">Glam</button>
   <button class="tab-btn tab-tutu" data-tab="tutu">Tutu</button>
+  <button class="tab-btn tab-devin" data-tab="devin">Devin</button>
 </nav>
 
 <main>
@@ -497,12 +591,32 @@
     </div>
   </section>
 
+  <section class="panel" id="panel-devin" data-kid="devin">
+    <h2>&#127944; Devin's Chore List &#127944;</h2>
+    <div class="card">
+      <div class="add-row">
+        <input type="text" id="input-devin" placeholder="Add a new chore...">
+        <button onclick="addChore('devin')">Add</button>
+      </div>
+      <ul class="chore-list" id="list-devin"></ul>
+    </div>
+    <div class="card reminders-section">
+      <h3>Reminders</h3>
+      <div class="reminder-add">
+        <input type="text" id="reminder-input-devin" placeholder="Add a reminder...">
+        <input type="datetime-local" id="reminder-due-devin">
+        <button onclick="addReminder('devin')">Add</button>
+      </div>
+      <ul class="reminder-list" id="reminder-list-devin"></ul>
+    </div>
+  </section>
+
 </main>
 
 <footer>Made with love for our family &hearts;</footer>
 
 <script>
-  const KIDS = ['greg', 'chloe', 'emani', 'glam', 'tutu'];
+  const KIDS = ['greg', 'chloe', 'emani', 'glam', 'tutu', 'devin'];
 
   /* ---------- Tabs ---------- */
   function showTab(kid) {
@@ -547,8 +661,24 @@
   function renderChores(kid) {
     const chores = loadData(kid);
     const list = document.getElementById('list-' + kid);
+
+    // Progress bar — create once, update on each render
+    let progWrap = document.getElementById('progress-' + kid);
+    if (!progWrap) {
+      progWrap = document.createElement('div');
+      progWrap.className = 'progress-wrap';
+      progWrap.id = 'progress-' + kid;
+      progWrap.innerHTML = '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:0%"></div></div><div class="progress-label"></div>';
+      list.parentNode.insertBefore(progWrap, list);
+    }
+    const doneCount = chores.filter(c => c.done).length;
+    const total = chores.length;
+    const pct = total === 0 ? 0 : Math.round(doneCount / total * 100);
+    progWrap.querySelector('.progress-bar-fill').style.width = pct + '%';
+    progWrap.querySelector('.progress-label').textContent = total === 0 ? '' : doneCount + ' of ' + total + ' done — ' + pct + '%';
+
     list.innerHTML = '';
-    if (chores.length === 0) {
+    if (total === 0) {
       const empty = document.createElement('li');
       empty.className = 'empty-msg';
       empty.textContent = 'No chores yet — add one above!';
@@ -580,6 +710,29 @@
       li.appendChild(removeBtn);
       list.appendChild(li);
     });
+
+    // All-done celebration row
+    if (total > 0 && doneCount === total) {
+      const msg = document.createElement('li');
+      msg.className = 'all-done-msg';
+      msg.textContent = '\uD83C\uDF89 All chores done! Amazing job!';
+      list.appendChild(msg);
+    }
+
+    // Clear completed button
+    if (chores.some(c => c.done)) {
+      const clearLi = document.createElement('li');
+      clearLi.style.listStyle = 'none';
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'clear-done-btn';
+      clearBtn.textContent = '\u2713 Clear completed chores';
+      clearBtn.addEventListener('click', () => {
+        saveData(kid, loadData(kid).filter(c => !c.done));
+        renderChores(kid);
+      });
+      clearLi.appendChild(clearBtn);
+      list.appendChild(clearLi);
+    }
   }
 
   function formatDue(iso) {
@@ -671,7 +824,7 @@
     renderReminders(kid);
   }
 
-  const KID_NAMES = { greg: 'Greg', chloe: 'Chloe', emani: 'Emani', glam: 'Glam', tutu: 'Tutu' };
+  const KID_NAMES = { greg: 'Greg', chloe: 'Chloe', emani: 'Emani', glam: 'Glam', tutu: 'Tutu', devin: 'Devin' };
 
   function checkDueReminders() {
     const now = new Date();
@@ -819,6 +972,33 @@
       s.style.top = Math.random() * 100 + '%';
       s.style.animationDelay = (Math.random() * 3) + 's';
       tutuPanel.appendChild(s);
+    }
+
+    // Footballs for Devin's Steelers panel
+    const devinPanel = document.getElementById('panel-devin');
+    for (let i = 0; i < 4; i++) {
+      const f = document.createElement('div');
+      f.className = 'football';
+      f.textContent = '\uD83C\uDFC8';
+      f.style.top = (8 + Math.random() * 78) + '%';
+      f.style.left = '-5%';
+      f.style.animationDelay = (Math.random() * 10) + 's';
+      f.style.animationDuration = (10 + Math.random() * 8) + 's';
+      devinPanel.appendChild(f);
+    }
+    // Gold sparkles for Devin
+    for (let i = 0; i < 30; i++) {
+      const sp = document.createElement('div');
+      sp.className = 'star';
+      sp.style.background = '#FFB612';
+      sp.style.boxShadow = '0 0 6px 3px rgba(255,182,18,0.5)';
+      const size = 1.5 + Math.random() * 2.5;
+      sp.style.width = size + 'px';
+      sp.style.height = size + 'px';
+      sp.style.left = Math.random() * 100 + '%';
+      sp.style.top = Math.random() * 100 + '%';
+      sp.style.animationDelay = (Math.random() * 3) + 's';
+      devinPanel.appendChild(sp);
     }
   }
   addDecor();
